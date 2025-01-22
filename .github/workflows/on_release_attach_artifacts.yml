@@ -1,0 +1,119 @@
+name: Attach artifacts on release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+  pull_request:
+    branches: ["main", "master"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        runs-on: [ubuntu-22.04, macos-12]
+    runs-on: ${{ matrix.runs-on }}
+    name: Build
+    steps:
+      - name: Set up Go 1.20.7
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.7
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: "0"
+
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
+          if [ -f Gopkg.toml ]; then
+              curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+              dep ensure
+          fi
+
+      # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
+      - name: Set environment variables
+        run: |
+          GOOS=$(go env GOOS)
+          GOARCH=$(go env GOARCH)
+          GOPATH=$(go env GOPATH)
+
+          BUILD_DIR=${GITHUB_WORKSPACE}/build
+          ARCHIVE="drt_go_scenario""_""$GOOS""_""$GOARCH"".zip"
+          
+          VM_GO_VERSION=$(cat go.mod | grep drt-go-chain-vm | sort -n | tail -n -1| awk -F '/' '{print$3}'| sed 's/ /@/g')
+          VM_GO_DIR=${GOPATH}/pkg/mod/github.com/TerraDharitri/${VM_GO_VERSION}
+
+          echo "GOOS=${GOOS}" >> $GITHUB_ENV
+          echo "GOARCH=${GOARCH}" >> $GITHUB_ENV
+          echo "GOPATH=${GOPATH}" >> $GITHUB_ENV
+          echo "BUILD_DIR=${BUILD_DIR}" >> $GITHUB_ENV
+          echo "ARCHIVE=${ARCHIVE}" >> $GITHUB_ENV
+          echo "VM_GO_DIR=${VM_GO_DIR}" >> $GITHUB_ENV
+
+      - name: Build
+        run: |
+          mkdir -p ${BUILD_DIR}
+
+          cd ${GITHUB_WORKSPACE}/cmd/drt-go-scenario
+          go build -o "${BUILD_DIR}/drt-go-scenario"
+
+      - name: Copy & link Wasmer libraries
+        run: |
+          if [[ "$GOOS" == linux && "$GOARCH" == amd64 ]]; then
+            cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR}/wasmer2/libvmexeccapi.so ${BUILD_DIR}/libvmexeccapi.so
+            cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR}/wasmer/libwasmer_linux_amd64.so ${BUILD_DIR}/libwasmer_linux_amd64.so
+
+            patchelf --replace-needed libvmexeccapi.so libvmexeccapi.so ${BUILD_DIR}/drt-go-scenario 
+            patchelf --replace-needed libwasmer_linux_amd64.so libwasmer_linux_amd64.so ${BUILD_DIR}/drt-go-scenario
+            patchelf --set-rpath "\$ORIGIN" ${BUILD_DIR}/drt-go-scenario
+
+            ldd ${BUILD_DIR}/drt-go-scenario
+          fi
+          if [[ "$GOOS" == darwin && "$GOARCH" == amd64 ]]; then
+            cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/libvmexeccapi.dylib
+            cp -v ${VM_GO_DIR}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
+
+            install_name_tool -id "@rpath/libvmexeccapi.dylib" ${BUILD_DIR}/libvmexeccapi.dylib
+            install_name_tool -id "@rpath/libwasmer_darwin_amd64.dylib" ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
+            install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/drt-go-scenario
+
+            otool -L ${BUILD_DIR}/drt-go-scenario
+          fi
+
+      - name: Smoke test
+        run: |
+          # Remove all downloaded Go packages, so that we can test the binary's independence from them (think of Wasmer libraries).
+          sudo rm -rf ${GOPATH}/pkg/mod
+          
+          # Test the binary in different current directories.
+          cd ${BUILD_DIR} && ./drt-go-scenario --version
+          cd ${GITHUB_WORKSPACE} && ${BUILD_DIR}/drt-go-scenario --version
+          cd / && ${BUILD_DIR}/drt-go-scenario --version
+
+      - name: Package build output
+        run: |
+          sudo chown -R $USER: ${BUILD_DIR}
+          chmod -R 755 ${BUILD_DIR}
+          ls -al ${BUILD_DIR}
+          zip -r -j ${ARCHIVE} ${BUILD_DIR}
+
+      - name: Save artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-output
+          path:  ${{ env.ARCHIVE }}
+          if-no-files-found: error
+
+      - name: Upload artifacts to release
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} ${{ env.ARCHIVE}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

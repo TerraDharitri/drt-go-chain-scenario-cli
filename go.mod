@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/TerraDharitri/drt-go-chain-scenario v0.0.3
-	github.com/TerraDharitri/drt-go-chain-vm v0.0.0-20250122165434-46fbf821a99f
+	github.com/TerraDharitri/drt-go-chain-vm v0.0.1
 	github.com/TerraDharitri/drt-go-chain-vm-v3 v0.0.0-20250122165833-74ab6815b69e
 	github.com/urfave/cli/v2 v2.27.5
 )

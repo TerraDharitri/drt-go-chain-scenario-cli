@@ -10,8 +10,8 @@ github.com/TerraDharitri/drt-go-chain-scenario v0.0.3 h1:9nbdTAqknY5GneuL+gNINSG
 github.com/TerraDharitri/drt-go-chain-scenario v0.0.3/go.mod h1:fVvW1HXqtPrObded3vNqb0wrvgdBU5sxIENEPvot/wA=
 github.com/TerraDharitri/drt-go-chain-storage v0.0.3 h1:PK9nen7K8lFYtAIiUqf2O9swkNbJdBSg1uGIAnh0UOk=
 github.com/TerraDharitri/drt-go-chain-storage v0.0.3/go.mod h1:tLADapkvOksmsLQyoWxkQwaOWwW0gzjpS7z4XQsk634=
-github.com/TerraDharitri/drt-go-chain-vm v0.0.0-20250122165434-46fbf821a99f h1:T9fUPOvRfKa8kC4+7Gla1tRBqMVFRIrl/Sdv5YRcH2k=
-github.com/TerraDharitri/drt-go-chain-vm v0.0.0-20250122165434-46fbf821a99f/go.mod h1:wgrztQX6aNyvTjhegZAED5aIFFXCJuEiMT72nKxN77Y=
+github.com/TerraDharitri/drt-go-chain-vm v0.0.1 h1:q+OOU9kBuor75NKkeG2s2ycOoqcv+FF+J+ihik6YPNo=
+github.com/TerraDharitri/drt-go-chain-vm v0.0.1/go.mod h1:wgrztQX6aNyvTjhegZAED5aIFFXCJuEiMT72nKxN77Y=
 github.com/TerraDharitri/drt-go-chain-vm-common v0.0.3 h1:4RFk5TVGUn7DFUD4LyOJg+90SoROkcE/oSSsqwfgjMY=
 github.com/TerraDharitri/drt-go-chain-vm-common v0.0.3/go.mod h1:62SXka19EX9bY0Q5e/J6meOsSG55XlmPvIwOw7TkI8Y=
 github.com/TerraDharitri/drt-go-chain-vm-v3 v0.0.0-20250122165833-74ab6815b69e h1:vjT7/KaY9FRS5xmfTyu3ZiH7LCRpIDrT8Dx86YIDcUE=

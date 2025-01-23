@@ -24,29 +24,33 @@ jobs:
           go-version: 1.20.7
         id: go
 
-      - name: Check out code into the Go module directory
+      - name: Check out code
         uses: actions/checkout@v3
         with:
           fetch-depth: "0"
 
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf
+
       - name: Get dependencies
         run: |
           go get -v -t -d ./...
+          go get github.com/TerraDharitri/drt-go-chain-vm@v0.0.1
           if [ -f Gopkg.toml ]; then
               curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
               dep ensure
           fi
 
-      # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
       - name: Set environment variables
         run: |
           GOOS=$(go env GOOS)
           GOARCH=$(go env GOARCH)
           GOPATH=$(go env GOPATH)
-
           BUILD_DIR=${GITHUB_WORKSPACE}/build
           ARCHIVE="drt_go_scenario""_""$GOOS""_""$GOARCH"".zip"
-          
           VM_GO_VERSION=$(grep -E '^\s*github.com/TerraDharitri/drt-go-chain-vm\s' go.mod | awk '{print $2}' | sed 's/ /@/g')
           VM_GO_DIR=${GOPATH}/pkg/mod/github.com/TerraDharitri/drt-go-chain-vm@${VM_GO_VERSION}
 
@@ -60,39 +64,64 @@ jobs:
       - name: Build
         run: |
           mkdir -p ${BUILD_DIR}
-
           cd ${GITHUB_WORKSPACE}/cmd/drt-go-scenario
           go build -o "${BUILD_DIR}/drt-go-scenario"
 
       - name: Copy & link Wasmer libraries
         run: |
+          # Debug information
+          echo "VM_GO_DIR contents:"
+          ls -la ${VM_GO_DIR} || true
+          
           if [[ "$GOOS" == linux && "$GOARCH" == amd64 ]]; then
-            cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR}/wasmer2/libvmexeccapi.so ${BUILD_DIR}/libvmexeccapi.so
-            cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR}/wasmer/libwasmer_linux_amd64.so ${BUILD_DIR}/libwasmer_linux_amd64.so
-
+            mkdir -p ${VM_GO_DIR}/wasmer2 ${VM_GO_DIR}/wasmer
+            
+            if [ ! -f "${VM_GO_DIR}/wasmer2/libvmexeccapi.so" ]; then
+              echo "Error: libvmexeccapi.so not found"
+              exit 1
+            fi
+            
+            if [ ! -f "${VM_GO_DIR}/wasmer/libwasmer_linux_amd64.so" ]; then
+              echo "Error: libwasmer_linux_amd64.so not found"
+              exit 1
+            fi
+            
+            cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR}/wasmer2/libvmexeccapi.so ${BUILD_DIR}/
+            cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR}/wasmer/libwasmer_linux_amd64.so ${BUILD_DIR}/
+            
             patchelf --replace-needed libvmexeccapi.so libvmexeccapi.so ${BUILD_DIR}/drt-go-scenario 
             patchelf --replace-needed libwasmer_linux_amd64.so libwasmer_linux_amd64.so ${BUILD_DIR}/drt-go-scenario
             patchelf --set-rpath "\$ORIGIN" ${BUILD_DIR}/drt-go-scenario
-
+            
             ldd ${BUILD_DIR}/drt-go-scenario
           fi
+          
           if [[ "$GOOS" == darwin && "$GOARCH" == amd64 ]]; then
-            cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/libvmexeccapi.dylib
-            cp -v ${VM_GO_DIR}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
-
+            mkdir -p ${VM_GO_DIR}/wasmer2 ${VM_GO_DIR}/wasmer
+            
+            if [ ! -f "${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib" ]; then
+              echo "Error: libvmexeccapi.dylib not found"
+              exit 1
+            fi
+            
+            if [ ! -f "${VM_GO_DIR}/wasmer/libwasmer_darwin_amd64.dylib" ]; then
+              echo "Error: libwasmer_darwin_amd64.dylib not found"
+              exit 1
+            fi
+            
+            cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/
+            cp -v ${VM_GO_DIR}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/
+            
             install_name_tool -id "@rpath/libvmexeccapi.dylib" ${BUILD_DIR}/libvmexeccapi.dylib
             install_name_tool -id "@rpath/libwasmer_darwin_amd64.dylib" ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
             install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/drt-go-scenario
-
+            
             otool -L ${BUILD_DIR}/drt-go-scenario
           fi
 
       - name: Smoke test
         run: |
-          # Remove all downloaded Go packages, so that we can test the binary's independence from them (think of Wasmer libraries).
           sudo rm -rf ${GOPATH}/pkg/mod
-          
-          # Test the binary in different current directories.
           cd ${BUILD_DIR} && ./drt-go-scenario --version
           cd ${GITHUB_WORKSPACE} && ${BUILD_DIR}/drt-go-scenario --version
           cd / && ${BUILD_DIR}/drt-go-scenario --version
@@ -108,7 +137,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: build-output
-          path:  ${{ env.ARCHIVE }}
+          path: ${{ env.ARCHIVE }}
           if-no-files-found: error
 
       - name: Upload artifacts to release

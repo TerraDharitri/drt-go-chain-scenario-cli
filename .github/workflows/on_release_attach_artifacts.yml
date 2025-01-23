@@ -37,7 +37,6 @@ jobs:
               dep ensure
           fi
 
-      # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
       - name: Set environment variables
         run: |
           GOOS=$(go env GOOS)
@@ -89,10 +88,7 @@ jobs:
 
       - name: Smoke test
         run: |
-          # Remove all downloaded Go packages, so that we can test the binary's independence from them (think of Wasmer libraries).
           sudo rm -rf ${GOPATH}/pkg/mod
-          
-          # Test the binary in different current directories.
           cd ${BUILD_DIR} && ./drt-go-scenario --version
           cd ${GITHUB_WORKSPACE} && ${BUILD_DIR}/drt-go-scenario --version
           cd / && ${BUILD_DIR}/drt-go-scenario --version

@@ -47,8 +47,8 @@ jobs:
           BUILD_DIR=${GITHUB_WORKSPACE}/build
           ARCHIVE="drt_go_scenario""_""$GOOS""_""$GOARCH"".zip"
           
-          VM_GO_VERSION=$(cat go.mod | grep drt-go-chain-vm | sort -n | tail -n -1| awk -F '/' '{print$3}'| sed 's/ /@/g')
-          VM_GO_DIR=${GOPATH}/pkg/mod/github.com/TerraDharitri/${VM_GO_VERSION}
+          VM_GO_VERSION=$(grep -E '^\s*github.com/TerraDharitri/drt-go-chain-vm\s' go.mod | awk '{print $2}' | sed 's/ /@/g')
+          VM_GO_DIR=${GOPATH}/pkg/mod/github.com/TerraDharitri/drt-go-chain-vm@${VM_GO_VERSION}
 
           echo "GOOS=${GOOS}" >> $GITHUB_ENV
           echo "GOARCH=${GOARCH}" >> $GITHUB_ENV

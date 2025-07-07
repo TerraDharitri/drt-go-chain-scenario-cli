@@ -1,2 +1,2 @@
 # drt-go-chain-scenario-cli
-## cli version of go-scenario
+DharitrI CLI for running JSON scenarios using the Go backend

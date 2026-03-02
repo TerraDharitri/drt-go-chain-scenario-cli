@@ -67,6 +67,14 @@ jobs:
           cd ${GITHUB_WORKSPACE}/cmd/drt-go-scenario
           go build -o "${BUILD_DIR}/drt-go-scenario"
 
+      - name: Debug VM paths
+        run: |
+          echo "VM_GO_DIR: ${VM_GO_DIR}"
+          echo "VM_GO_DIR_LEGACY: ${VM_GO_DIR_LEGACY}"
+          ls -la ${VM_GO_DIR}/ || echo "VM_GO_DIR not found"
+          ls -la ${VM_GO_DIR_LEGACY}/ || echo "VM_GO_DIR_LEGACY not found"
+          find ${GOPATH}/pkg/mod/github.com -name "*drt-go-chain-vm*" -type d
+
       - name: Copy & link Wasmer libraries
         run: |
           if [[ "$GOOS" == linux && "$GOARCH" == amd64 ]]; then

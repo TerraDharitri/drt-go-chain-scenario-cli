@@ -4,7 +4,7 @@ import (
 	scencli "github.com/TerraDharitri/drt-go-chain-scenario-cli/cli"
 )
 
-const version = "5.1.0"
+const version = "1.0.0"
 
 func main() {
 	scencli.ScenariosCLI(version)

@@ -37,24 +37,20 @@ jobs:
               dep ensure
           fi
 
-      # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
+           # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
       - name: Set environment variables
         run: |
           GOOS=$(go env GOOS)
           GOARCH=$(go env GOARCH)
-          GOPATH=$(go env GOPATH)
 
           BUILD_DIR=${GITHUB_WORKSPACE}/build
-          ARCHIVE="drt_go_scenario""_""$GOOS""_""$GOARCH"".zip"
-          
-          VM_GO_VERSION=$(cat go.mod | grep drt-go-chain-vm | sort -n | tail -n -1| awk -F '/' '{print$3}'| sed 's/ /@/g')
-          VM_GO_VERSION_LEGACY=$(cat go.mod | grep drt-go-chain-vm-v | sort -n | tail -n -1| awk -F '/' '{print$3}'| sed 's/ /@/g')
-          VM_GO_DIR=${GOPATH}/pkg/mod/github.com/!terra!dharitri/${VM_GO_VERSION}
-          VM_GO_DIR_LEGACY=${GOPATH}/pkg/mod/github.com/!terra!dharitri//${VM_GO_VERSION_LEGACY}
+          ARCHIVE="drt_go_scenario_${GOOS}_${GOARCH}.zip"
+
+          VM_GO_DIR=$(go list -m -f '{{.Dir}}' github.com/TerraDharitri/drt-go-chain-vm)
+          VM_GO_DIR_LEGACY=$(go list -m -f '{{.Dir}}' github.com/TerraDharitri/drt-go-chain-vm-v1_4)
 
           echo "GOOS=${GOOS}" >> $GITHUB_ENV
           echo "GOARCH=${GOARCH}" >> $GITHUB_ENV
-          echo "GOPATH=${GOPATH}" >> $GITHUB_ENV
           echo "BUILD_DIR=${BUILD_DIR}" >> $GITHUB_ENV
           echo "ARCHIVE=${ARCHIVE}" >> $GITHUB_ENV
           echo "VM_GO_DIR=${VM_GO_DIR}" >> $GITHUB_ENV

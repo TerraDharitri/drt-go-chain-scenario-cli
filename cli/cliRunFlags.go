@@ -6,9 +6,8 @@ import (
 	scenclibase "github.com/TerraDharitri/drt-go-chain-scenario/clibase"
 	scenexec "github.com/TerraDharitri/drt-go-chain-scenario/scenario/executor"
 	scenio "github.com/TerraDharitri/drt-go-chain-scenario/scenario/io"
-	vm14scenario "github.com/TerraDharitri/drt-go-chain-vm-v3/scenario"
+	vm14scenario "github.com/TerraDharitri/drt-go-chain-vm-v1_4/scenario"
 	vm15scenario "github.com/TerraDharitri/drt-go-chain-vm/scenario"
-	vm15wasmer "github.com/TerraDharitri/drt-go-chain-vm/wasmer"
 	vm15wasmer2 "github.com/TerraDharitri/drt-go-chain-vm/wasmer2"
 	cli "github.com/urfave/cli/v2"
 )
@@ -35,7 +34,7 @@ func (*runConfig) GetFlags() []cli.Flag {
 		},
 		&cli.BoolFlag{
 			Name:  "wasmer1",
-			Usage: "use the wasmer1 executor`",
+			Usage: "use the wasmer1 executor (no longer available)`",
 		},
 		&cli.BoolFlag{
 			Name:  "wasmer2",
@@ -69,7 +68,7 @@ func (*runConfig) ParseFlags(cCtx *cli.Context) scenclibase.CLIRunOptions {
 	case vm15FlagValue:
 		vm15Builder := vm15scenario.NewScenarioVMHostBuilder()
 		if cCtx.Bool("wasmer1") {
-			vm15Builder.OverrideVMExecutor = vm15wasmer.ExecutorFactory()
+			panic("wasmer1 no longer available")
 		}
 		if cCtx.Bool("wasmer2") {
 			vm15Builder.OverrideVMExecutor = vm15wasmer2.ExecutorFactory()

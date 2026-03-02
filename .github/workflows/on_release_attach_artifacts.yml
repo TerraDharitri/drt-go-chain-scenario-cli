@@ -47,10 +47,10 @@ jobs:
           BUILD_DIR=${GITHUB_WORKSPACE}/build
           ARCHIVE="drt_go_scenario""_""$GOOS""_""$GOARCH"".zip"
           
-          VM_GO_VERSION=$(cat go.mod | grep drt-go-chain-vm | sort -n | tail -n -1| awk -F '/' '{print$3}'| sed 's/ /@/g')
-          VM_GO_VERSION_LEGACY=$(cat go.mod | grep drt-chain-vm-v | sort -n | tail -n -1| awk -F '/' '{print$3}'| sed 's/ /@/g')
-          VM_GO_DIR=${GOPATH}/pkg/mod/github.com/TerraDharitri/${VM_GO_VERSION}
-          VM_GO_DIR_LEGACY=${GOPATH}/pkg/mod/github.com/TerraDharitri/${VM_GO_VERSION_LEGACY}
+          VM_GO_VERSION=$(cat go.mod | grep "drt-go-chain-vm " | awk '{print $2}')
+          VM_GO_VERSION_LEGACY=$(cat go.mod | grep "drt-go-chain-vm-v1_4 " | awk '{print $2}')
+          VM_GO_DIR=${GOPATH}/pkg/mod/github.com/!terra!dharitri/drt-go-chain-vm@${VM_GO_VERSION}
+          VM_GO_DIR_LEGACY=${GOPATH}/pkg/mod/github.com/!terra!dharitri/drt-go-chain-vm-v1_4@${VM_GO_VERSION_LEGACY}
 
           echo "GOOS=${GOOS}" >> $GITHUB_ENV
           echo "GOARCH=${GOARCH}" >> $GITHUB_ENV
@@ -70,23 +70,27 @@ jobs:
       - name: Copy & link Wasmer libraries
         run: |
           if [[ "$GOOS" == linux && "$GOARCH" == amd64 ]]; then
-            cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR}/wasmer2/libvmexeccapi.so ${BUILD_DIR}/libvmexeccapi.so
-            cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_linux_amd64.so ${BUILD_DIR}/libwasmer_linux_amd64.so
-
-            patchelf --replace-needed libvmexeccapi.so libvmexeccapi.so ${BUILD_DIR}/drt-go-scenario
-            patchelf --replace-needed libwasmer_linux_amd64.so libwasmer_linux_amd64.so ${BUILD_DIR}/drt-go-scenario 
+            if [ -f "${VM_GO_DIR}/wasmer2/libvmexeccapi.so" ]; then
+              cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR}/wasmer2/libvmexeccapi.so ${BUILD_DIR}/libvmexeccapi.so
+              patchelf --replace-needed libvmexeccapi.so libvmexeccapi.so ${BUILD_DIR}/drt-go-scenario
+            fi
+            if [ -f "${VM_GO_DIR_LEGACY}/wasmer/libwasmer_linux_amd64.so" ]; then
+              cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_linux_amd64.so ${BUILD_DIR}/libwasmer_linux_amd64.so
+              patchelf --replace-needed libwasmer_linux_amd64.so libwasmer_linux_amd64.so ${BUILD_DIR}/drt-go-scenario
+            fi
             patchelf --set-rpath "\$ORIGIN" ${BUILD_DIR}/drt-go-scenario
-
             ldd ${BUILD_DIR}/drt-go-scenario
           fi
           if [[ "$GOOS" == darwin && "$GOARCH" == amd64 ]]; then
-            cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/libvmexeccapi.dylib
-            cp -v ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
-
-            install_name_tool -id "@rpath/libvmexeccapi.dylib" ${BUILD_DIR}/libvmexeccapi.dylib
-            install_name_tool -id "@rpath/libwasmer_darwin_amd64.dylib" ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
+            if [ -f "${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib" ]; then
+              cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/libvmexeccapi.dylib
+              install_name_tool -id "@rpath/libvmexeccapi.dylib" ${BUILD_DIR}/libvmexeccapi.dylib
+            fi
+            if [ -f "${VM_GO_DIR_LEGACY}/wasmer/libwasmer_darwin_amd64.dylib" ]; then
+              cp -v ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
+              install_name_tool -id "@rpath/libwasmer_darwin_amd64.dylib" ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
+            fi
             install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/drt-go-scenario
-
             otool -L ${BUILD_DIR}/drt-go-scenario
           fi
 

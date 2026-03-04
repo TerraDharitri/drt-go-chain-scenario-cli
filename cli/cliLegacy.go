@@ -9,7 +9,6 @@ import (
 	scenclibase "github.com/TerraDharitri/drt-go-chain-scenario/clibase"
 	scenio "github.com/TerraDharitri/drt-go-chain-scenario/scenario/io"
 	vm15scenario "github.com/TerraDharitri/drt-go-chain-vm/scenario"
-	vm15wasmer "github.com/TerraDharitri/drt-go-chain-vm/wasmer"
 	vm15wasmer2 "github.com/TerraDharitri/drt-go-chain-vm/wasmer2"
 )
 
@@ -34,7 +33,7 @@ func parseOptionFlags() scenclibase.CLIRunOptions {
 
 	vmBuilder := vm15scenario.NewScenarioVMHostBuilder()
 	if *useWasmer1 {
-		vmBuilder.OverrideVMExecutor = vm15wasmer.ExecutorFactory()
+		panic("wasmer1 no longer available")
 	}
 	if *useWasmer2 {
 		vmBuilder.OverrideVMExecutor = vm15wasmer2.ExecutorFactory()

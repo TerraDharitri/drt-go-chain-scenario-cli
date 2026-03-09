@@ -62,8 +62,6 @@ jobs:
           echo "VM_GO_DIR_LEGACY=${VM_GO_DIR_LEGACY}" >> $GITHUB_ENV
 
       - name: Build
-        env:
-         GOARCH: amd64
         run: |
           mkdir -p ${BUILD_DIR}
 
@@ -82,7 +80,7 @@ jobs:
 
             ldd ${BUILD_DIR}/drt-go-scenario
           fi
-          if [[ "$GOOS" == darwin && "$GOARCH" == amd64 ]]; then
+          if [[ "$GOOS" == darwin ]]; then
             cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/libvmexeccapi.dylib
             cp -v ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
 

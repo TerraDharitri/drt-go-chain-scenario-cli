@@ -75,7 +75,7 @@ jobs:
 
             ldd ${BUILD_DIR}/drt-go-scenario
           fi
-          if [[ "$GOOS" == darwin && "$GOARCH" == amd64 ]]; then
+          if [[ "$GOOS" == darwin]]; then
             cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/libvmexeccapi.dylib
             cp -v ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
 
@@ -116,3 +116,4 @@ jobs:
           gh release upload ${{ github.event.release.tag_name }} ${{ env.ARCHIVE}}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          

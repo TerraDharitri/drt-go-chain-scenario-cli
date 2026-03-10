@@ -80,12 +80,22 @@ jobs:
 
             ldd ${BUILD_DIR}/drt-go-scenario
           fi
-          if [[ "$GOOS" == darwin ]]; then
+          if [[ "$GOOS" == darwin && "$GOARCH" == amd64 ]]; then
             cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/libvmexeccapi.dylib
             cp -v ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
 
             install_name_tool -id "@rpath/libvmexeccapi.dylib" ${BUILD_DIR}/libvmexeccapi.dylib
             install_name_tool -id "@rpath/libwasmer_darwin_amd64.dylib" ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
+            install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/drt-go-scenario
+
+            otool -L ${BUILD_DIR}/drt-go-scenario
+          fi
+          if [[ "$GOOS" == darwin && "$GOARCH" == arm64 ]]; then
+            cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi_arm.dylib ${BUILD_DIR}/libvmexeccapi_arm.dylib
+            cp -v ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_darwin_arm64_shim.dylib ${BUILD_DIR}/libwasmer_darwin_arm64_shim.dylib
+
+            install_name_tool -id "@rpath/libvmexeccapi_arm.dylib" ${BUILD_DIR}/libvmexeccapi_arm.dylib
+            install_name_tool -id "@rpath/libwasmer_darwin_arm64_shim.dylib" ${BUILD_DIR}/libwasmer_darwin_arm64_shim.dylib
             install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/drt-go-scenario
 
             otool -L ${BUILD_DIR}/drt-go-scenario

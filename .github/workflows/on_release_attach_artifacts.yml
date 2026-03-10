@@ -1,11 +1,11 @@
-name: Build and Attach Artifacts
+name: Attach artifacts on release
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: ["main", "dev"]
 
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: ["main", "dev"]
 
   workflow_dispatch:
 
@@ -17,117 +17,108 @@ permissions:
 
 jobs:
   build:
-    name: Build binaries
-    strategy:
+    strategy:   
       matrix:
-        os: [ubuntu-22.04, macos-14]
-
-    runs-on: ${{ matrix.os }}
-
-    env:
-      GO_VERSION: "1.23.6"
-      CGO_ENABLED: 1
-
+        runs-on: [ubuntu-22.04, macos-14]
+    runs-on: ${{ matrix.runs-on }}
+    name: Build
     steps:
+      - name: Set up Go 1.23.6
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.23.6
+        id: go
 
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: "0"
 
-    - name: Setup Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: ${{ env.GO_VERSION }}
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
+          if [ -f Gopkg.toml ]; then
+              curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+              dep ensure
+          fi
 
-    - name: Install dependencies
-      run: |
-        go mod download
-
-    - name: Prepare build variables
-      run: |
-        BUILD_DIR=${GITHUB_WORKSPACE}/build
-        mkdir -p ${BUILD_DIR}
-
-        GOOS=$(go env GOOS)
-
-        if [[ "$GOOS" == "darwin" ]]; then
-          GOARCH=amd64
-        else
+           # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-environment-variable
+      - name: Set environment variables
+        run: |
+          GOOS=$(go env GOOS)
           GOARCH=$(go env GOARCH)
-        fi
 
-        ARCHIVE="drt_go_scenario_${GOOS}_${GOARCH}.zip"
+          BUILD_DIR=${GITHUB_WORKSPACE}/build
+          ARCHIVE="drt_go_scenario_${GOOS}_${GOARCH}.zip"
 
-        VM_GO_DIR=$(go list -m -f '{{.Dir}}' github.com/TerraDharitri/drt-go-chain-vm)
-        VM_GO_DIR_LEGACY=$(go list -m -f '{{.Dir}}' github.com/TerraDharitri/drt-go-chain-vm-v1_4)
+          VM_GO_DIR=$(go list -m -f '{{.Dir}}' github.com/TerraDharitri/drt-go-chain-vm)
+          VM_GO_DIR_LEGACY=$(go list -m -f '{{.Dir}}' github.com/TerraDharitri/drt-go-chain-vm-v1_4)
 
-        echo "BUILD_DIR=${BUILD_DIR}" >> $GITHUB_ENV
-        echo "GOOS=${GOOS}" >> $GITHUB_ENV
-        echo "GOARCH=${GOARCH}" >> $GITHUB_ENV
-        echo "ARCHIVE=${ARCHIVE}" >> $GITHUB_ENV
-        echo "VM_GO_DIR=${VM_GO_DIR}" >> $GITHUB_ENV
-        echo "VM_GO_DIR_LEGACY=${VM_GO_DIR_LEGACY}" >> $GITHUB_ENV
+          echo "GOOS=${GOOS}" >> $GITHUB_ENV
+          echo "GOARCH=${GOARCH}" >> $GITHUB_ENV
+          echo "BUILD_DIR=${BUILD_DIR}" >> $GITHUB_ENV
+          echo "ARCHIVE=${ARCHIVE}" >> $GITHUB_ENV
+          echo "VM_GO_DIR=${VM_GO_DIR}" >> $GITHUB_ENV
+          echo "VM_GO_DIR_LEGACY=${VM_GO_DIR_LEGACY}" >> $GITHUB_ENV
 
-    - name: Build binary
-      run: |
-        cd cmd/drt-go-scenario
-        GOOS=$GOOS GOARCH=$GOARCH go build -o "${BUILD_DIR}/drt-go-scenario"
+      - name: Build
+        run: |
+          mkdir -p ${BUILD_DIR}
 
-    - name: Link Wasmer libraries
-      run: |
+          cd ${GITHUB_WORKSPACE}/cmd/drt-go-scenario
+          go build -o "${BUILD_DIR}/drt-go-scenario"
 
-        if [[ "$GOOS" == "linux" ]]; then
+      - name: Copy & link Wasmer libraries
+        run: |
+          if [[ "$GOOS" == linux && "$GOARCH" == amd64 ]]; then
+            cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR}/wasmer2/libvmexeccapi.so ${BUILD_DIR}/libvmexeccapi.so
+            cp --verbose --no-preserve=mode,ownership ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_linux_amd64.so ${BUILD_DIR}/libwasmer_linux_amd64.so
 
-          cp ${VM_GO_DIR}/wasmer2/libvmexeccapi.so ${BUILD_DIR}/
-          cp ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_linux_amd64.so ${BUILD_DIR}/
+            patchelf --replace-needed libvmexeccapi.so libvmexeccapi.so ${BUILD_DIR}/drt-go-scenario
+            patchelf --replace-needed libwasmer_linux_amd64.so libwasmer_linux_amd64.so ${BUILD_DIR}/drt-go-scenario 
+            patchelf --set-rpath "\$ORIGIN" ${BUILD_DIR}/drt-go-scenario
 
-          patchelf --replace-needed libvmexeccapi.so libvmexeccapi.so ${BUILD_DIR}/drt-go-scenario
-          patchelf --replace-needed libwasmer_linux_amd64.so libwasmer_linux_amd64.so ${BUILD_DIR}/drt-go-scenario
-          patchelf --set-rpath "\$ORIGIN" ${BUILD_DIR}/drt-go-scenario
+            ldd ${BUILD_DIR}/drt-go-scenario
+          fi
+             if [[ "$GOOS" == darwin && "$GOARCH" == amd64 ]]; then
+            cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/libvmexeccapi.dylib
+            cp -v ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
 
-          ldd ${BUILD_DIR}/drt-go-scenario
+            install_name_tool -id "@rpath/libvmexeccapi.dylib" ${BUILD_DIR}/libvmexeccapi.dylib
+            install_name_tool -id "@rpath/libwasmer_darwin_amd64.dylib" ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
+            install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/mx-scenario-go
 
-        fi
+            otool -L ${BUILD_DIR}/mx-scenario-go
+          fi
 
+      - name: Smoke test
+        run: |
+          # Remove all downloaded Go packages, so that we can test the binary's independence from them (think of Wasmer libraries).
+          sudo rm -rf ${GOPATH}/pkg/mod
+          
+          # Test the binary in different current directories.
+          cd ${BUILD_DIR} && ./drt-go-scenario --version
+          cd ${GITHUB_WORKSPACE} && ${BUILD_DIR}/drt-go-scenario --version
+          cd / && ${BUILD_DIR}/drt-go-scenario --version
 
-        if [[ "$GOOS" == "darwin" ]]; then
+      - name: Package build output
+        run: |
+          sudo chown -R $USER: ${BUILD_DIR}
+          chmod -R 755 ${BUILD_DIR}
+          ls -al ${BUILD_DIR}
+          zip -r -j ${ARCHIVE} ${BUILD_DIR}
 
-          cp ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/
-          cp ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/
+      - name: Save artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output-${{ matrix.runs-on }}
+          path:  ${{ env.ARCHIVE }}
+          if-no-files-found: error
 
-          install_name_tool -id "@rpath/libvmexeccapi.dylib" ${BUILD_DIR}/libvmexeccapi.dylib
-          install_name_tool -id "@rpath/libwasmer_darwin_amd64.dylib" ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
-          install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/drt-go-scenario
-
-          otool -L ${BUILD_DIR}/drt-go-scenario
-
-        fi
-
-    - name: Smoke test
-      run: |
-        sudo rm -rf ${GOPATH}/pkg/mod
-
-        cd ${BUILD_DIR}
-        ./drt-go-scenario --version
-
-        cd ${GITHUB_WORKSPACE}
-        ${BUILD_DIR}/drt-go-scenario --version
-
-    - name: Package binary
-      run: |
-        cd ${BUILD_DIR}
-        zip -r ${ARCHIVE} *
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: drt-build-${{ matrix.os }}
-        path: build/${{ env.ARCHIVE }}
-
-    - name: Upload to release
-      if: github.event_name == 'release'
-      run: |
-        gh release upload ${{ github.event.release.tag_name }} build/${ARCHIVE}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifacts to release
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} ${{ env.ARCHIVE}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          

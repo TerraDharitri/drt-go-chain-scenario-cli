@@ -19,7 +19,7 @@ jobs:
   build:
     strategy:
       matrix:
-        runs-on: [ubuntu-22.04, macos-15]
+        runs-on: [ubuntu-22.04, macos-13]
     runs-on: ${{ matrix.runs-on }}
     name: Build
     steps:
@@ -80,15 +80,15 @@ jobs:
 
             ldd ${BUILD_DIR}/drt-go-scenario
           fi
-          if [[ "$GOOS" == darwin ]]; then
+             if [[ "$GOOS" == darwin && "$GOARCH" == amd64 ]]; then
             cp -v ${VM_GO_DIR}/wasmer2/libvmexeccapi.dylib ${BUILD_DIR}/libvmexeccapi.dylib
             cp -v ${VM_GO_DIR_LEGACY}/wasmer/libwasmer_darwin_amd64.dylib ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
 
             install_name_tool -id "@rpath/libvmexeccapi.dylib" ${BUILD_DIR}/libvmexeccapi.dylib
             install_name_tool -id "@rpath/libwasmer_darwin_amd64.dylib" ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
-            install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/drt-go-scenario
+            install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/mx-scenario-go
 
-            otool -L ${BUILD_DIR}/drt-go-scenario
+            otool -L ${BUILD_DIR}/mx-scenario-go
           fi
 
       - name: Smoke test

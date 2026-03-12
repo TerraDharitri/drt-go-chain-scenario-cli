@@ -2,6 +2,8 @@ github.com/TerraDharitri/drt-go-bigint v0.0.3 h1:08875rT1Yi99AIPnuojaD0VZBEue2q1
 github.com/TerraDharitri/drt-go-bigint v0.0.3/go.mod h1:JsPQQjC0BUlfRkTttj0N7RTKjK1RQoMDOZsx++ah1WA=
 github.com/TerraDharitri/drt-go-chain-core v1.0.1 h1:k0B3DZNYJwE/NmibEQBVi/TxDm5Ij1Poo2HOv6HcMMM=
 github.com/TerraDharitri/drt-go-chain-core v1.0.1/go.mod h1:dppf7NEpCEr/YrKYrRCnyVLsehIVnXSWMU4cikdL2/Q=
+github.com/TerraDharitri/drt-go-chain-core v1.0.2 h1:TRZObngjCHU9hL8Tqbpt57lHWwljmN2RGDGYSmq8LBo=
+github.com/TerraDharitri/drt-go-chain-core v1.0.2/go.mod h1:dppf7NEpCEr/YrKYrRCnyVLsehIVnXSWMU4cikdL2/Q=
 github.com/TerraDharitri/drt-go-chain-crypto v1.0.1 h1:kSfVue6EEF41W6MO2TJuaBe448Fpqsyq2/ILvTGaUpQ=
 github.com/TerraDharitri/drt-go-chain-crypto v1.0.1/go.mod h1:viKoiLEX6j8l9X4ByoxA/v+9PKlH97qTQPkgaWUJxvQ=
 github.com/TerraDharitri/drt-go-chain-logger v1.0.0 h1:JU7F0+DLrdV6mNXemd5RzyQcsy/QKCIrhSkvmoeHA9Y=
@@ -16,6 +18,8 @@ github.com/TerraDharitri/drt-go-chain-vm-common v1.0.0 h1:NdUhj5A3vdWRHiylNrG1bJ
 github.com/TerraDharitri/drt-go-chain-vm-common v1.0.0/go.mod h1:JBM8GVLE0R6LJeUSi4KwHvexGwyfB4Vb7j5tCPa9gCk=
 github.com/TerraDharitri/drt-go-chain-vm-v1_4 v1.0.0 h1:P7kLDPMoxf50pUUodu44CvXNv+fSZbSoBT5LIi7ujhU=
 github.com/TerraDharitri/drt-go-chain-vm-v1_4 v1.0.0/go.mod h1:ONWRM5AesnI2iOEHH2mkeufN5jGPiKbDtrw6Zz3cLLE=
+github.com/TerraDharitri/drt-go-chain-vm-v1_4 v1.0.1 h1:Qar3oqaTE52Qji7YWKbq1/bESc3Gl+AqIZWpJswm+lU=
+github.com/TerraDharitri/drt-go-chain-vm-v1_4 v1.0.1/go.mod h1:o92jF4vqMIOzVfbXTtZwZclJqtfN3PvYdATa0TA0JTs=
 github.com/TwiN/go-color v1.1.0 h1:yhLAHgjp2iAxmNjDiVb6Z073NE65yoaPlcki1Q22yyQ=
 github.com/TwiN/go-color v1.1.0/go.mod h1:aKVf4e1mD4ai2FtPifkDPP5iyoCwiK08YGzGwerjKo0=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=

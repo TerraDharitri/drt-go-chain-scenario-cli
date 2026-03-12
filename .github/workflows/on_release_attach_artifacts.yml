@@ -86,9 +86,9 @@ jobs:
 
             install_name_tool -id "@rpath/libvmexeccapi.dylib" ${BUILD_DIR}/libvmexeccapi.dylib
             install_name_tool -id "@rpath/libwasmer_darwin_amd64.dylib" ${BUILD_DIR}/libwasmer_darwin_amd64.dylib
-            install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/mx-scenario-go
+            install_name_tool -add_rpath "@loader_path" ${BUILD_DIR}/drt-go-scenario
 
-            otool -L ${BUILD_DIR}/mx-scenario-go
+            otool -L ${BUILD_DIR}/drt-go-scenario
           fi
 
       - name: Smoke test
